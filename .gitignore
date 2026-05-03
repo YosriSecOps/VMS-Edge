@@ -1,0 +1,20 @@
+# Données sensibles et bases de données
+surveillance.db
+users.json
+config.json
+
+# Fichiers IA générés (Modèle entraîné)
+trainer.yml
+
+# Dossiers d'images (Ne pas uploader les visages des gens pour le RGPD)
+captures/
+dataset/
+
+# Caches Python
+__pycache__/
+*.pyc
+
+# Environnement virtuel (si vous en créez un)
+venv/
+env/
+.env
