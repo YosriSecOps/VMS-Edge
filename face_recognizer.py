@@ -12,11 +12,16 @@ class FaceRecognizer:
         # Création de l'instance du modèle LBPH
         self.model = cv2.face.LBPHFaceRecognizer_create()
         
-        # Charger le modèle entraîné (cerveau)
-        try:
-            self.model.read('trainer.yml')
-        except cv2.error:
-            print("[ATTENTION] Fichier 'trainer.yml' introuvable. Le modèle ne reconnaîtra personne.")
+        # Charger le modèle entraîné (cerveau) avec retry (protection OneDrive/Antivirus)
+        for attempt in range(5):
+            try:
+                self.model.read('trainer.yml')
+                break
+            except cv2.error:
+                if attempt == 4:
+                    print("[ATTENTION] Fichier 'trainer.yml' introuvable ou verrouillé. Le modèle ne reconnaîtra personne.")
+                import time
+                time.sleep(0.5)
 
         # 3. Charger le fichier JSON contenant les données des utilisateurs enregistrés
         # Remplace les anciens dictionnaires codés en dur.

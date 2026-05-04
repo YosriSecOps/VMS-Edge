@@ -15,8 +15,8 @@ from db_manager import DBManager
 from watermarker import Watermarker
 from telegram_alert import send_telegram_alert
 
-TELEGRAM_TOKEN = "VOTRE_TOKEN_TELEGRAM_ICI"
-TELEGRAM_CHAT_ID = "VOTRE_CHAT_ID_ICI"
+TELEGRAM_TOKEN = "VOTRE_TOKEN_TELEGRAM"
+TELEGRAM_CHAT_ID = "VOTRE_CHAT_ID"
 
 class CameraWorker(threading.Thread):
     """
@@ -47,29 +47,49 @@ class CameraWorker(threading.Thread):
         self.running = True
         self.annotated_frame = None
         self.is_connected = False
+        self.should_pause = False
 
     def run(self):
-        # Cast en entier si l'utilisateur a rentré "0" ou "1" (Webcam locale)
-        source = int(self.source_url) if str(self.source_url).isdigit() else self.source_url
-        try:
-            self.cap = cv2.VideoCapture(source)
-            self.is_connected = self.cap.isOpened()
-        except Exception:
-            self.is_connected = False
-            
         while self.running:
+            if self.should_pause:
+                if self.is_connected:
+                    self.is_connected = False
+                    if self.cap and self.cap.isOpened():
+                        self.cap.release()
+                time.sleep(0.5)
+                continue
+
             if not self.is_connected:
-                time.sleep(1)
+                source = int(self.source_url) if str(self.source_url).isdigit() else self.source_url
+                try:
+                    self.cap = cv2.VideoCapture(source)
+                    self.is_connected = self.cap.isOpened()
+                except Exception:
+                    self.is_connected = False
+                if not self.is_connected:
+                    time.sleep(1)
                 continue
                 
             ret, frame = self.cap.read()
             if ret:
                 self.annotated_frame, self.last_capture = self._process_frame_ai(frame)
             else:
-                time.sleep(0.01)
+                self.is_connected = False
+                if self.cap and self.cap.isOpened():
+                    self.cap.release()
+                time.sleep(0.1)
                 
         if self.cap and self.cap.isOpened():
             self.cap.release()
+
+    def pause(self):
+        """Libère temporairement la caméra (ex: pour l'ajout d'un utilisateur)."""
+        self.should_pause = True
+            
+    def resume(self):
+        """Reconnecte la caméra après une pause."""
+        self.face_recognizer = FaceRecognizer() # Recharge le modèle après l'ajout d'un user
+        self.should_pause = False
 
     def _process_frame_ai(self, frame):
         clean_frame = frame.copy()
@@ -303,3 +323,11 @@ class DynamicSurveillanceApp(ctk.CTkFrame):
         self.running = False
         for worker in self.workers.values():
             worker.stop()
+
+    def pause_all(self):
+        for worker in self.workers.values():
+            worker.pause()
+            
+    def resume_all(self):
+        for worker in self.workers.values():
+            worker.resume()

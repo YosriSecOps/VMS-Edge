@@ -18,3 +18,5 @@ __pycache__/
 venv/
 env/
 .env
+
+safe_deploy.py

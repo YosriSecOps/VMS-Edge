@@ -468,10 +468,21 @@ class AdminDashboard:
     # === SYSTÈME D'ENRÔLEMENT (AJOUT USER)  ===
     # ==========================================
     def open_add_user_window(self):
+        if hasattr(self, 'surveillance_app'):
+            self.surveillance_app.pause_all()
+            
         self.add_window = ctk.CTkToplevel(self.root)
         self.add_window.title("Enrôler un Nouvel Utilisateur")
         self.add_window.geometry("450x450")
         self.add_window.grab_set()
+        
+        # S'assurer que les caméras redémarrent quand la fenêtre est fermée
+        original_destroy = self.add_window.destroy
+        def custom_destroy():
+            if hasattr(self, 'surveillance_app'):
+                self.surveillance_app.resume_all()
+            original_destroy()
+        self.add_window.destroy = custom_destroy
 
         ctk.CTkLabel(self.add_window, text="Nom et Prénom :", font=("Helvetica", 14, "bold")).pack(pady=(20, 5))
         self.entry_nom = ctk.CTkEntry(self.add_window, font=("Helvetica", 13), width=300)
